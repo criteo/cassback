@@ -1,0 +1,37 @@
+# This configuration was made for rubocop >= 0.36.0
+
+### SRE Core configuration
+### (See also https://confluence.criteois.com/pages/viewpage.action?pageId=270467645)
+# Taken from Core's rules
+Metrics/LineLength:
+  Max: 120
+# Taken from Core's rules
+Style/AlignHash:
+  EnforcedColonStyle: table
+  EnforcedHashRocketStyle: table
+
+### SRE Storage configuration
+# We have french people's names lying around
+Style/AsciiComments:
+  Enabled: false
+# This wants snake_case file names and we have dashes everywhere
+Style/FileName:
+  Enabled: false
+# Use consistent style for hashes (do not indent far away when in parentheses, etc.)
+Style/IndentHash:
+  EnforcedStyle: consistent
+# Enforce trailing commas in literals for consistency, ease of edition, and code generation
+Style/TrailingCommaInLiteral:
+  EnforcedStyleForMultiline: comma
+
+## Temporary edits (that should be fixed before enabling them)
+# Messes things up for now
+Style/BracesAroundHashParameters:
+  Enabled: false
+# Badly implemented, and crashes in some cases
+Performance/Casecmp:
+  Enabled: false
+# We should have trailing commas only inside multiline statements
+# r.veznaver said this one will be fixed in rubocop
+Style/TrailingCommaInArguments:
+  Enabled: false

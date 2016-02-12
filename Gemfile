@@ -1,0 +1,6 @@
+source 'https://rubygems.org'
+ruby '2.1.6'
+gem 'webhdfs'
+gem 'gssapi'
+gem 'rubocop'
+gem 'table_print'

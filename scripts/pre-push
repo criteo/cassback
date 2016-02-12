@@ -1,0 +1,17 @@
+#!/bin/bash
+
+echo "Running rubocop with auto-correct" >&2
+bundle exec rubocop --config .rubocop.yml --auto-correct --out /dev/null
+modified=$(git status | grep modified | wc -l)
+if [ $modified -eq 0 ]; then
+    echo -e "\e[1;32mNothing to correct, pushing\e[0m" >&2
+    exit 0
+else
+    s=''
+    if [ $modified -gt 1 ]; then
+        s='s'
+    fi
+
+    echo -e "\e[1;31m$modified file$s were modified, please add commit before pushing\e[0m" >&2
+    exit 1
+fi

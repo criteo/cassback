@@ -1,0 +1,10 @@
+cassandra:
+  config: "/etc/cassandra/conf/cassandra.yaml"
+
+hadoop:
+  hostname: "10.60.34.217"
+  port: 14000
+  directory: "/user/v.vanhollebeke/cassandra"
+
+restore:
+  destination: "cassback_restore"
