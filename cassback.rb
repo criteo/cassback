@@ -16,8 +16,9 @@ class ::Hash
   end
 end
 
-# Create a logger on the console
-logger = Logger.new(STDOUT)
+# Create a Ruby logger with time/size rotation that logs both to file and console.
+two_mb = 2 * 1024 * 1024
+logger = Logger.new("| tee cassback.log", "weekly", two_mb)
 
 #  Default action
 action = nil
