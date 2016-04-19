@@ -7,7 +7,6 @@ require_relative '../lib/hadoop.rb'
 require_relative '../lib/cassandra.rb'
 require_relative '../lib/backuptool.rb'
 
-
 # This allows merging hashes that can contain themself hashes,
 class ::Hash
   def deep_merge!(second)
@@ -18,7 +17,7 @@ end
 
 # Create a Ruby logger with time/size rotation that logs both to file and console.
 two_mb = 2 * 1024 * 1024
-logger = Logger.new("| tee cassback.log", "weekly", two_mb)
+logger = Logger.new('| tee cassback.log', 'weekly', two_mb)
 
 #  Default action
 action = nil
@@ -44,21 +43,18 @@ options = {
   },
 }
 
-
 # If no argument given in command line, print the help
 ARGV << '-h' if ARGV.empty?
 
 # Parse command line options
-parser = OptionParser.new do|opts|
+parser = OptionParser.new do |opts|
   opts.banner = 'Usage: cassback.rb [options]'
-
 
   opts.separator ''
   opts.separator 'Configuration:'
   opts.on('-C', '--config CONFIGFILE', 'Configuration file for the application') do |v|
     config_file = v
   end
-
 
   opts.separator ''
   opts.separator 'Actions:'
@@ -125,7 +121,6 @@ ensure
   options.deep_merge!command_line_config
 end
 
-
 # Fail if no action specified
 if action.nil?
   logger.error('No action given')
@@ -151,7 +146,7 @@ begin
 
   # Restore a snapshot
   elsif action == 'restore'
-    fail('No date given') unless options.include? 'date'
+    raise('No date given') unless options.include? 'date'
     bck.restore_snapshot(options['node'], options['date'], options['restore']['destination'])
 
   # List snapshots
@@ -160,7 +155,7 @@ begin
 
   #  Delete a snapshot
   elsif action == 'delete'
-    fail('No date given') unless options.include? 'date'
+    raise('No date given') unless options.include? 'date'
     bck.delete_snapshots(node: options['node'], date: options['date'])
   end
 

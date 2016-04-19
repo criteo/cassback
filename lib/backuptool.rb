@@ -5,10 +5,9 @@ require 'table_print'
 BUFFER_SIZE = 10_000_000
 
 # Directory where metadata is
-META_DIR = "cass_snap_metadata"
+META_DIR = 'cass_snap_metadata'.freeze
 
 class BackupTool
-
   # Create a new BackupTool instance
   # * *Args*    :
   #   - +cassandra+ -> Cassandra instance
@@ -117,7 +116,7 @@ class BackupTool
   def delete_snapshots(node: @cassandra.node_name, date: 'ALL')
     snapshots = search_snapshots(node: node, date: date)
     if snapshots.empty?
-      fail('No snapshot found for deletion')
+      raise('No snapshot found for deletion')
     else
       snapshots.each do |snapshot|
         @logger.info("Deleting snapshot #{snapshot}")
@@ -180,9 +179,9 @@ class BackupTool
     snapshots = search_snapshots(node: node, date: date)
 
     if snapshots.empty?
-      fail('No snapshot found for restore')
+      raise('No snapshot found for restore')
     elsif snapshots.length > 1
-      fail('More than one candidate snapshot to restore')
+      raise('More than one candidate snapshot to restore')
     else
       snapshot = snapshots[0]
       @logger.info("Restoring snapshot #{snapshot}")
