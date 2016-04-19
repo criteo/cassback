@@ -1,0 +1,13 @@
+cassandra:
+#  config: "/etc/cassandra/conf/cassandra.yaml"
+  config: "/Users/b.niculescu/Tools/apache-cassandra-2.0.16/conf/cassandra.yaml"
+
+hadoop:
+#  hostname: "10.60.34.217"
+  hostname: "jobs-user.hpc.criteo.prod"
+  port: 14000
+#  directory: "/user/v.vanhollebeke/cassandra"
+  directory: "/tmp/b.niculescu/cassandra"
+
+restore:
+  destination: "cassback_restore"

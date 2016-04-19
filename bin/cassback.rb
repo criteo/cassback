@@ -1,12 +1,12 @@
 #!/usr/bin/env ruby
-
 require 'logger'
 require 'optparse'
 require 'yaml'
 
-require_relative 'hadoop'
-require_relative 'cassandra'
-require_relative 'backuptool'
+require_relative '../lib/hadoop.rb'
+require_relative '../lib/cassandra.rb'
+require_relative '../lib/backuptool.rb'
+
 
 # This allows merging hashes that can contain themself hashes,
 class ::Hash
@@ -23,6 +23,12 @@ logger = Logger.new("| tee cassback.log", "weekly", two_mb)
 #  Default action
 action = nil
 
+# Default config file
+config_file = ''
+
+# Default command line config
+command_line_config = {}
+
 # Default options
 options = {
   'cassandra' => {
@@ -38,13 +44,6 @@ options = {
   },
 }
 
-# Read the configuration file if exist
-begin
-  options.deep_merge!(YAML.load_file('config.yml'))
-  logger.info('Using configuration file')
-rescue
-  logger.warn('Unable to read configuration file, continue with default settings')
-end
 
 # If no argument given in command line, print the help
 ARGV << '-h' if ARGV.empty?
@@ -52,6 +51,14 @@ ARGV << '-h' if ARGV.empty?
 # Parse command line options
 parser = OptionParser.new do|opts|
   opts.banner = 'Usage: cassback.rb [options]'
+
+
+  opts.separator ''
+  opts.separator 'Configuration:'
+  opts.on('-C', '--config CONFIGFILE', 'Configuration file for the application') do |v|
+    config_file = v
+  end
+
 
   opts.separator ''
   opts.separator 'Actions:'
@@ -83,19 +90,19 @@ parser = OptionParser.new do|opts|
   opts.separator ''
   opts.separator 'Hadoop (WebHDFS):'
   opts.on('-H', '--host HOSTNAME', 'Hostname (default is localhost)') do |v|
-    options['hadoop']['host'] = v
+    command_line_config['hadoop']['host'] = v
   end
   opts.on('-P', '--port PORT', 'Port (default is 14000)') do |v|
-    options['hadoop']['port'] = v
+    command_line_config['hadoop']['port'] = v
   end
   opts.on('-D', '--directory DIRECTORY', 'Directory where to store backups (default is cassandra)') do |v|
-    options['hadoop']['directory'] = v
+    command_line_config['hadoop']['directory'] = v
   end
 
   opts.separator ''
   opts.separator 'Cassandra:'
-  opts.on('-C', '--config CONFIGFILE', 'Cassandra configuration file (default is /etc/cassandra/conf/cassandra.yaml)') do |v|
-    options['cassandra']['config'] = v
+  opts.on('-F', '--cassandra CONFIGFILE', 'Cassandra configuration file (default is /etc/cassandra/conf/cassandra.yaml)') do |v|
+    command_line_config['cassandra']['config'] = v
   end
 
   opts.separator ''
@@ -106,6 +113,18 @@ parser = OptionParser.new do|opts|
   end
 end
 parser.parse!
+
+# Read the configuration file if exist
+begin
+  options.deep_merge!(YAML.load_file(config_file))
+  logger.info("Using configuration file #{config_file}")
+rescue
+  logger.warn('Unable to read configuration file, continue with default settings')
+ensure
+  # merge with command line settings.§
+  options.deep_merge!command_line_config
+end
+
 
 # Fail if no action specified
 if action.nil?

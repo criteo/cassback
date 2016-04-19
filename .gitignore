@@ -6,3 +6,9 @@ doc
 *.iml
 *.ipr
 *.iws
+
+#Log files
+*.log
+
+#Ruby gem files
+*.gem
