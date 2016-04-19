@@ -1,2 +1,8 @@
 Gemfile.lock
 doc
+
+# IntelliJ specific
+.idea
+*.iml
+*.ipr
+*.iws
