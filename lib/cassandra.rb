@@ -20,7 +20,7 @@ class Cassandra
   def read_config_file(config_file)
     config = YAML.load_file(config_file)
     if config.include? 'cluster_name'
-      @cluster_name = config['cluster_name'].gsub(" ","_")
+      @cluster_name = config['cluster_name'].tr(' ', '_')
     else
       @logger.warn("Could not found cluster name in Cassandra config file #{@config_file}")
       @cluster_name = 'noname_cassandra_cluster'
@@ -30,10 +30,10 @@ class Cassandra
         @data_path = config['data_file_directories'][0]
       else
         # TODO : manage multiple data directories
-        fail('This backup tool does not currently work with multiple data directories')
+        raise('This backup tool does not currently work with multiple data directories')
       end
     else
-      fail('Not data directory defined in config file')
+      raise('Not data directory defined in config file')
     end
   rescue Exception => e
     raise("Could not parse Cassandra config file #{config_file} (#{e.message})")
@@ -48,7 +48,7 @@ class Cassandra
       if success
         @logger.debug('Cassandra Snapshot successful')
       else
-        fail
+        raise
       end
     rescue Exception => e
       raise("Error while snapshot command (#{e.message})")
@@ -64,7 +64,7 @@ class Cassandra
       if success
         @logger.debug('Cassandra Snapshot deletion successful')
       else
-        fail
+        raise
       end
     rescue Exception => e
       raise("Error while clearsnapshot command (#{e.message})")
