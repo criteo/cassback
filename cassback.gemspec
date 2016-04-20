@@ -11,22 +11,19 @@ Gem::Specification.new do |spec|
 
   spec.summary       = 'Cassandra backup to HDFS.'
   spec.description   = 'This is a tool that allows creating backups of Cassandra and pushing them into HDFS.'
-  spec.homepage      = 'https://gitlab.criteois.com/ruby-gems/cassback'
+  spec.homepage      = 'http://rubygems.org/gems/cassback'
 
-  # Prevent pushing this gem to RubyGems.org by setting 'allowed_push_host', or
-  # delete this section to allow pushing this gem to any host.
-  if spec.respond_to?(:metadata)
-    spec.metadata['allowed_push_host'] = "TODO: Set to 'http://mygemserver.com'"
-  else
-    raise 'RubyGems 2.0 or newer is required to protect against public gem pushes.'
-  end
+  spec.licenses = ['Apache-2.0']
 
   # spec.files         = `git ls-files -z`.split("\x0").reject { |f| f.match(%r{^(test|spec|features)/}) }
   spec.files         = ['lib/hadoop.rb', 'lib/cassandra.rb', 'lib/backuptool.rb']
   spec.bindir        = 'bin'
-  spec.executables << 'cassback.rb'
+  spec.executables << 'cassback'
   spec.require_paths = ['lib']
 
   spec.add_development_dependency 'bundler', '~> 1.11'
   spec.add_development_dependency 'rake', '~> 10.0'
+
+  spec.add_runtime_dependency 'webhdfs', '~> 0.8', '>= 0.8.0'
+  spec.add_runtime_dependency 'table_print', '~> 1.5', '>= 1.5.6'
 end
