@@ -108,7 +108,7 @@ class Cassandra
 
   def new_snapshot
     today = Time.new.strftime('%Y_%m_%d')
-    snapname = 'cass_snap_' + today
+    snapname = 'cass_snap'
 
     nodetool_snapshot(snapname)
     metadata = build_metadata(snapname)
@@ -116,8 +116,8 @@ class Cassandra
     CassandraSnapshot.new(@cluster_name, @node_name, today, metadata)
   end
 
-  def delete_snapshot(snapshot)
-    snapname = 'cass_snap_' + snapshot.date
+  def delete_snapshot(_snapshot)
+    snapname = 'cass_snap'
     nodetool_clearsnapshot(snapname)
   end
 end
