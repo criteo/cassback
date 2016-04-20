@@ -1,9 +1,10 @@
 cassandra:
   config: "/etc/cassandra/conf/cassandra.yaml"
+
 hadoop:
   hostname: "jobs-user.hpc.criteo.prod"
   port: 14000
-  directory: "/tmp/cassandrabackups/prod/cstars02"
+  directory: "/tmp/cassandrabackups/prod/"
 
 restore:
   destination: "cassback_restore"
