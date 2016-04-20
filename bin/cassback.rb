@@ -26,7 +26,11 @@ action = nil
 config_file = ''
 
 # Default command line config
-command_line_config = {}
+command_line_config = {
+  'cassandra' => {},
+  'hadoop'    => {},
+  'restore'   => {},
+}
 
 # Default options
 options = {
@@ -80,7 +84,7 @@ parser = OptionParser.new do |opts|
     options['date'] = v
   end
   opts.on('-t', '--destination DIR', 'local destination path for restore (default is cassandra)') do |v|
-    options['restore']['destination'] = v
+    command_line_config['restore']['destination'] = v
   end
 
   opts.separator ''
@@ -97,7 +101,7 @@ parser = OptionParser.new do |opts|
 
   opts.separator ''
   opts.separator 'Cassandra:'
-  opts.on('-F', '--cassandra CONFIGFILE', 'Cassandra configuration file (default is /etc/cassandra/conf/cassandra.yaml)') do |v|
+  opts.on('-E', '--cassandra CONFIGFILE', 'Cassandra configuration file (default is /etc/cassandra/conf/cassandra.yaml)') do |v|
     command_line_config['cassandra']['config'] = v
   end
 
