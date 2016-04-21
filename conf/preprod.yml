@@ -5,6 +5,8 @@ hadoop:
   hostname: "jobs-user.hpc.criteo.preprod"
   port: 14000
   directory: "/tmp/cassandraback/preprod/"
+  retryTimes : 5
+  retryInterval : 1
 
 restore:
   destination: "cassback_restore"

@@ -44,9 +44,25 @@ A simple command that you can use for starting a backup is :
 
 The application has some default configuration defined.
 You can overwrite the default configuration using two meanings :
-1) Using a configuration file passed as parameter on the command line.
-2) Using individual configuration properties passed as parameters on the command line.
+
+1. Using a configuration file passed as parameter on the command line.
+
+2. Using individual configuration properties passed as parameters on the command line.
 The command line parameters have precedence over the configuration file.
+
+## Data Integrity
+
+The project is using internally the webhdfs tool (see https://github.com/kzk/webhdfs)  that is a Ruby project
+built on top of the WebHDFS API (https://hadoop.apache.org/docs/current/hadoop-project-dist/hadoop-hdfs/WebHDFS.html).
+Because we're using the WebHDFS API we get for free data integrity. The tool is also configurable so in case errors it
+can retry the file download/upload of data. This is configurable via the following config file properties :
+
+1. **hadoop.retryTimes** - the number of retries the tool should do before giving up. Default set to 5.
+2. **hadoop.retryInterval** - the interval (in seconds) the tool should take between two attempts. Default set to 1 second.
+
+If you want to check more about Hadoop's checksum algorithm that ensures data integrity you can check the
+following link : https://www.safaribooksonline.com/library/view/hadoop-the-definitive/9781449328917/ch04.html
+
 
 ## Contributing
 

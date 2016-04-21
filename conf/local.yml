@@ -8,6 +8,8 @@ hadoop:
   port: 14000
 #  directory: "/user/v.vanhollebeke/cassandra"
   directory: "/tmp/b.niculescu/cassandra"
+  retryTimes : 3
+  retryInterval : 1
 
 restore:
   destination: "cassback_restore"
