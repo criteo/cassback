@@ -40,7 +40,8 @@ class BackupTool
       begin
         if date == 'ALL'
           ls = @hadoop.list("#{@hadoop.base_dir}/#{@metadir}/#{@cassandra.cluster_name}/#{node}")
-          ls.each do |item|
+          ls_metadata = ls.select { |item| item['pathSuffix'].include? 'cass_snap_' }
+          ls_metadata.each do |item|
             date = item['pathSuffix'].gsub('cass_snap_', '')
             metadata = get_snapshot_metadata(node, date)
             snapshot = CassandraSnapshot.new(@cassandra.cluster_name, node, date, metadata)
@@ -141,6 +142,36 @@ class BackupTool
     end
   end
 
+  # Cleans up backups that are older than a number of days.
+  # This functions cleans data on all nodes.
+  def cleanup(days)
+    retention_date = Date.today - days
+    @logger.info("Cleaning backup data on all nodes before #{retention_date}.")
+
+    all_snapshots = search_snapshots
+    @logger.info("A total of #{all_snapshots.size} snapshots were found on Hadoop server.")
+
+    snapshots_to_be_deleted = all_snapshots.select { |snapshot| snapshot.get_date < retention_date }
+    @logger.info("A total of #{snapshots_to_be_deleted.size} snapshots will be deleted.")
+
+    snapshots_to_be_deleted.each do |snapshot|
+      delete_snapshots(node: snapshot.node, date: snapshot.date)
+    end
+
+    all_backup_flags = get_backup_flags
+    @logger.info("A total of #{all_backup_flags.size} back up flags were found on Hadoop server.")
+
+    backup_flags_to_be_delete = all_backup_flags.select { |flag| flag.date < retention_date }
+    @logger.info("A total of #{backup_flags_to_be_delete.size} backup flags will be deleted.")
+
+    backup_flags_location = @hadoop.base_dir + '/' + @metadir + '/' + @cassandra.cluster_name
+    backup_flags_to_be_delete.each do |flag|
+      file = backup_flags_location + '/' + flag.file
+      @logger.info("Deleting #{file}")
+      @hadoop.delete(file)
+    end
+  end
+
   # Method that creates a backup flag to signal that the backup is finished on all nodes
   # This is an individual command that has to be called manually after snapshots have finished
   def create_backup_flag(date)
@@ -149,6 +180,15 @@ class BackupTool
 
     @logger.info('Setting backup completed flag : ' + remote_file)
     @hadoop.create(remote_file, '', overwrite: true)
+  end
+
+  def get_backup_flags
+    backup_flags_location = @hadoop.base_dir + '/' + @metadir + '/' + @cassandra.cluster_name
+    ls = @hadoop.list(backup_flags_location)
+    backup_flags = ls.select { |item| item['pathSuffix'].include? 'BACKUP_COMPLETED_' }
+    backup_flags.collect do |file|
+      BackupFlag.new(@cassandra.cluster_name, file['pathSuffix'])
+    end
   end
 
   # Download a file from HDFS, buffered way

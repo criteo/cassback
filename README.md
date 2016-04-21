@@ -30,15 +30,15 @@ You should then see the following output :
 
 ## Usage
 
-When the cassback gem installed it adds the **cassback.rb** file into your PATH variable.
+When the cassback gem installed it adds the **cassback** executable file into your PATH variable.
 This means that you can execute it using one of the following commands and it will return example of usage :
 
-    cassback.rb
-    cassback.rb -h
+    cassback
+    cassback -h
 
 A simple command that you can use for starting a backup is :
 
-    cassback.rb -S -C path_to_some_config_file.yml
+    cassback -S -C path_to_some_config_file.yml
 
 ## Configuration
 
@@ -49,6 +49,21 @@ You can overwrite the default configuration using two meanings :
 
 2. Using individual configuration properties passed as parameters on the command line.
 The command line parameters have precedence over the configuration file.
+
+## Orchestration
+
+The tool is designed to do snapshots at **node level** (and not at **cluster level**) - basically it has to be installed
+on each node and a separate process will have to be executed from there to trigger a node level snapshot. Because this task is
+quite complex it is recommended to use an orchestration tool (like Rundeck) that allows you to execute same command
+on multiple machines and run the processes in parallel.
+
+After all node backups are finished the orchestration tool will have to take care of signaling other applications that
+the backup is completely finished. That is done now by adding a new empty file on the cluster metadata folder that has
+the format BACKUP_COMPLETED_yyyy_MM_dd. This has to be triggered only once by using the following command :
+
+    cassback -B [-d date] -C conf/path_to_some_config_file.yml
+
+Optionally you can also pass a date, if not present current day date will be assumed.
 
 ## Data Integrity
 
@@ -63,6 +78,17 @@ can retry the file download/upload of data. This is configurable via the followi
 If you want to check more about Hadoop's checksum algorithm that ensures data integrity you can check the
 following link : https://www.safaribooksonline.com/library/view/hadoop-the-definitive/9781449328917/ch04.html
 
+## Cleanup policy
+
+Usually backups of databases take a lot of space. Even if we have optimized the code so the backups are done incrementally
+(meaning that a file is not stored twice even if it's present in multiple backups), still cleanup needs to be done.
+The tool has a cleanup policy of cleaning snapshots after some days have passed since the snapshot has been published.
+This is configurable via the **cleanup.retentionDays** property in the configuration file. One point is that cleanup is
+done at cluster level (for all nodes) since it doesn't make sense to keep data for only some of the nodes.
+
+The command for triggering a cleanup is :
+
+    cassback -A -C conf/path_to_some_config_file.yml
 
 ## Contributing
 

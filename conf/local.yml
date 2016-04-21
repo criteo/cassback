@@ -13,3 +13,6 @@ hadoop:
 
 restore:
   destination: "cassback_restore"
+
+cleanup:
+  retentionDays: 30

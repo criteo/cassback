@@ -150,4 +150,19 @@ class CassandraSnapshot
     d = @date <=> other.date
     c * 3 + n * 2 + d
   end
+
+  def get_date
+    DateTime.strptime(@date, '%Y_%m_%d')
+  end
+end
+
+class BackupFlag
+  attr_reader :cluster, :date, :file
+
+  def initialize(cluster, file)
+    @cluster = cluster
+    @file = file.dup
+    date_as_string = file.sub! 'BACKUP_COMPLETED_', ''
+    @date = DateTime.strptime(date_as_string, '%Y_%m_%d')
+  end
 end
