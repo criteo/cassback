@@ -52,7 +52,7 @@ ARGV << '-h' if ARGV.empty?
 
 # Parse command line options
 parser = OptionParser.new do |opts|
-  opts.banner = 'Usage: cassback.rb [options]'
+  opts.banner = 'Usage: cassback [options]'
 
   opts.separator ''
   opts.separator 'Configuration:'
@@ -73,6 +73,10 @@ parser = OptionParser.new do |opts|
   end
   opts.on('-F', '--flush', 'removes a backuped snapshot from Hadoop, needs a date') do |_v|
     action = 'delete'
+  end
+  opts.on('-B', '--backupFlag', 'creates an empty file to signal that the backup has finished, can be used with a date, \
+    today date is assumed if no date is provided') do |_v|
+    action = 'backupFlag'
   end
 
   opts.separator ''
@@ -161,6 +165,13 @@ begin
   elsif action == 'delete'
     raise('No date given') unless options.include? 'date'
     bck.delete_snapshots(node: options['node'], date: options['date'])
+
+  # Create backup flag.
+  elsif action == 'backupFlag'
+    # Use today's date if no date has been provided
+    date = options['date']
+    date ||= Time.new.strftime('%Y_%m_%d')
+    bck.create_backup_flag(date)
   end
 
 #  In case of failure

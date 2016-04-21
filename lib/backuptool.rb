@@ -141,6 +141,22 @@ class BackupTool
     end
   end
 
+  # Method that creates a backup flag to signal that the backup is finished on all nodes
+  # This is an individual command that has to be called manually after snapshots have finished
+  def create_backup_flag(date)
+    file_name = 'BACKUP_COMPLETED_' + date
+    File.new(file_name, 'w')
+
+    remote_file = @hadoop.base_dir + '/' + @metadir + '/' + @cassandra.cluster_name + '/' + file_name
+    file_handler = File.open(file_name, 'r')
+
+    @logger.info('Setting backup completed flag : ' + remote_file)
+    @hadoop.create(remote_file, file_handler, overwrite: true)
+    file_handler.close
+
+    File.delete(file_name)
+  end
+
   # Download a file from HDFS, buffered way
   # * *Args*    :
   #   - +remote+ -> HDFS path
