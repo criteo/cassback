@@ -15,8 +15,8 @@ Gem::Specification.new do |spec|
 
   spec.licenses = ['Apache-2.0']
 
-  # spec.files         = `git ls-files -z`.split("\x0").reject { |f| f.match(%r{^(test|spec|features)/}) }
-  spec.files         = ['lib/hadoop.rb', 'lib/cassandra.rb', 'lib/backuptool.rb']
+  spec.files         = `git ls-files`.split("\n")
+  spec.test_files    = `git ls-files -- test/*`.split("\n")
   spec.bindir        = 'bin'
   spec.executables << 'cassback'
   spec.require_paths = ['lib']

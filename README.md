@@ -90,6 +90,11 @@ The command for triggering a cleanup is :
 
     cassback -A -C conf/path_to_some_config_file.yml
 
+# Unit tests
+Unit tests can be executed locally by running the following command :
+
+    rake test
+
 ## Contributing
 
 For now this is an internal Criteo project, but were aiming for making it open source and publishing to GitHub.
