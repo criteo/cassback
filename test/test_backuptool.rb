@@ -11,7 +11,7 @@ class TestSimpleNumber < Test::Unit::TestCase
     hadoop = HadoopStub.new('test/hadoop')
     create_new_snapshot(hadoop, 'node1', '2016_04_22', [1, 2])
 
-    remote_files = hadoop.list('test/hadoop')
+    remote_files = hadoop.list_files('test/hadoop')
     # two files were backed up + one metadata file
     assert_equal(3, remote_files.size)
 
@@ -35,7 +35,7 @@ class TestSimpleNumber < Test::Unit::TestCase
     create_new_snapshot(hadoop, 'node1', '2016_04_22', [1, 2])
     create_new_snapshot(hadoop, 'node1', '2016_04_23', [2, 3, 4])
 
-    remote_files = hadoop.list('test/hadoop')
+    remote_files = hadoop.list_files('test/hadoop')
     # two files were backed up + one metadata file
     assert_equal(6, remote_files.size)
 
@@ -71,7 +71,7 @@ class TestSimpleNumber < Test::Unit::TestCase
     # restore a newly created snapshot
     backup_tool.restore_snapshot('node1', '2016_04_22', 'test/restore')
 
-    restored_files = hadoop.list('test/restore')
+    restored_files = hadoop.list_files('test/restore')
     # two files were restored
     assert_equal(2, restored_files.size)
     assert_equal('test/restore/SSTable-1-Data.db', restored_files[0])
@@ -90,11 +90,47 @@ class TestSimpleNumber < Test::Unit::TestCase
     # delete a newly created snapshot
     backup_tool.delete_snapshots(node: 'node1', date: '2016_04_22')
 
-    remote_files = hadoop.list('test/hadoop')
+    remote_files = hadoop.list_files('test/hadoop')
     assert_equal(0, remote_files.size)
 
     hadoop.delete('test/cassandra')
   end
+
+  def test_backup_flag
+    hadoop = HadoopStub.new('test/hadoop')
+    backup_tool = create_new_snapshot(hadoop, 'node1', '2016_04_22', [1, 2])
+
+    backup_tool.create_backup_flag('2016_04_22')
+
+    remote_files = hadoop.list_files('test/hadoop')
+    assert_equal(4, remote_files.size)
+    # Flag is created at cluster level
+    assert_equal('test/hadoop/cass_snap_metadata/cluster1/BACKUP_COMPLETED_2016_04_22', remote_files[0])
+
+    # cleanup
+    hadoop.delete('test/hadoop')
+    hadoop.delete('test/cassandra')
+  end
+
+
+  def test_get_backup_flag
+    hadoop = HadoopStub.new('test/hadoop')
+    backup_tool = create_new_snapshot(hadoop, 'node1', '2016_04_22', [1, 2])
+
+    backup_tool.create_backup_flag('2016_04_22')
+    flags = backup_tool.get_backup_flags
+
+    # One flag found
+    assert_equal(1, flags.size)
+    # Flag points to the correct file
+    assert_equal('cluster1', flags[0].cluster)
+    assert_equal('BACKUP_COMPLETED_2016_04_22', flags[0].file)
+
+    # cleanup
+    hadoop.delete('test/hadoop')
+    hadoop.delete('test/cassandra')
+  end
+
 
   def create_new_snapshot(hadoop, node, date, file_indexes)
     logger = Logger.new(STDOUT)

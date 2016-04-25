@@ -11,11 +11,15 @@ class HadoopStub
   end
 
   def list(path, _options = {})
-    filesAndFolders = Dir.glob("#{path}/**/*")
-    filesAndFolders.collect do |file|
-      { 'pathSuffix' => file }
+    files = list_files(path, _options)
+    files.collect do |file|
+      { 'pathSuffix' => File.basename(file) }
     end
-    filesAndFolders.select { |file| File.file?file }
+  end
+
+  def list_files(path, _options = {})
+    files_and_folders = Dir.glob("#{path}/**/*")
+    files_and_folders.select { |file| File.file?file }
   end
 
   def create(path, body, _options = {})
