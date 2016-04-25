@@ -11,15 +11,24 @@ class HadoopStub
   end
 
   def list(path, _options = {})
-    files = list_files(path, _options)
-    files.collect do |file|
-      { 'pathSuffix' => File.basename(file) }
+    files_and_folders = Dir.glob("#{path}/*")
+    files_and_folders.collect do |file|
+      type = if File.file?(file)
+               'FILE'
+             else
+               'DIRECTORY'
+             end
+      # return a hash similar to the one that hadoop sends (containing fewer entries)
+      {
+        'pathSuffix' => File.basename(file),
+        'type'       => type,
+      }
     end
   end
 
   def list_files(path, _options = {})
     files_and_folders = Dir.glob("#{path}/**/*")
-    files_and_folders.select { |file| File.file?file }
+    files_and_folders.select { |file| File.file?(file) }
   end
 
   def create(path, body, _options = {})

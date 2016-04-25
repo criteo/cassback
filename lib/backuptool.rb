@@ -61,7 +61,8 @@ class BackupTool
     if node == 'ALL'
       begin
         ls = @hadoop.list("#{@hadoop.base_dir}/#{@metadir}/#{@cassandra.cluster_name}")
-        ls.each do |item|
+        ls_nodes = ls.select { |item| item['type'].casecmp('DIRECTORY') == 0 }
+        ls_nodes.each do |item|
           n = item['pathSuffix']
           result += get_snapshots_node(n, date)
         end

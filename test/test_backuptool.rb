@@ -25,7 +25,7 @@ class TestSimpleNumber < Test::Unit::TestCase
     assert(metadata_content.include? 'SSTable-1-Data.db')
     assert(metadata_content.include? 'SSTable-2-Data.db')
 
-    # delete the hadoop folder
+    # cleanup
     hadoop.delete('test/hadoop')
     hadoop.delete('test/cassandra')
   end
@@ -112,7 +112,6 @@ class TestSimpleNumber < Test::Unit::TestCase
     hadoop.delete('test/cassandra')
   end
 
-
   def test_get_backup_flag
     hadoop = HadoopStub.new('test/hadoop')
     backup_tool = create_new_snapshot(hadoop, 'node1', '2016_04_22', [1, 2])
@@ -131,6 +130,43 @@ class TestSimpleNumber < Test::Unit::TestCase
     hadoop.delete('test/cassandra')
   end
 
+  def test_cleanup
+    hadoop = HadoopStub.new('test/hadoop')
+    retention_days = 30
+
+    date_31_days_back = (Date.today - 31).strftime('%Y_%m_%d')
+    date_30_days_back = (Date.today - 30).strftime('%Y_%m_%d')
+
+    # Two backups on two nodes
+    create_new_snapshot(hadoop, 'node1', date_31_days_back, [1, 2, 3, 4])
+    create_new_snapshot(hadoop, 'node2', date_31_days_back, [1, 2, 3, 4])
+    create_new_snapshot(hadoop, 'node1', date_30_days_back, [3, 4, 5, 6])
+    backup_tool = create_new_snapshot(hadoop, 'node2', date_30_days_back, [4, 5, 6, 7])
+
+    # Both backups are marked as completed
+    backup_tool.create_backup_flag(date_31_days_back)
+    backup_tool.create_backup_flag(date_30_days_back)
+    backup_tool.create_backup_flag(date_30_days_back)
+
+    backup_tool.cleanup(retention_days)
+
+    # Two snapshots were deleted, two were kept
+    snapshots = backup_tool.search_snapshots
+    assert_equal(2, snapshots.size)
+    assert_equal('node1', snapshots[0].node)
+    assert_equal(date_30_days_back, snapshots[0].date)
+    assert_equal('node2', snapshots[1].node)
+    assert_equal(date_30_days_back, snapshots[1].date)
+
+    # One backup flag was deleted, one was kept.
+    backup_flags = backup_tool.get_backup_flags
+    assert_equal(1, backup_flags.size)
+    assert_equal("BACKUP_COMPLETED_#{date_30_days_back}", backup_flags[0].file)
+
+    # cleanup
+    hadoop.delete('test/hadoop')
+    hadoop.delete('test/cassandra')
+  end
 
   def create_new_snapshot(hadoop, node, date, file_indexes)
     logger = Logger.new(STDOUT)
