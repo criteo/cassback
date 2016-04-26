@@ -17,7 +17,12 @@ end
 
 # Create a Ruby logger with time/size rotation that logs both to file and console.
 two_mb = 2 * 1024 * 1024
-logger = Logger.new('| tee cassback.log', 'weekly', two_mb)
+logger = Logger.new('cassback.log', 'weekly', two_mb)
+logger.formatter = proc do |severity, datetime, progname, msg|
+    entry = "[#{datetime}] #{severity} #{progname} : #{msg}\n"
+    print entry
+    entry
+end
 
 begin
   app_version = Gem.loaded_specs['cassback'].version
