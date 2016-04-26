@@ -27,4 +27,5 @@ Gem::Specification.new do |spec|
   spec.add_runtime_dependency 'gssapi', '~> 1.2', '>= 1.2.0'
   spec.add_runtime_dependency 'webhdfs', '~> 0.8', '>= 0.8.0'
   spec.add_runtime_dependency 'table_print', '~> 1.5', '>= 1.5.6'
+  spec.add_runtime_dependency 'filesize', '~> 0.1', '>= 0.1.1'
 end
