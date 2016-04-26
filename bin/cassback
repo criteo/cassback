@@ -19,6 +19,14 @@ end
 two_mb = 2 * 1024 * 1024
 logger = Logger.new('| tee cassback.log', 'weekly', two_mb)
 
+begin
+  app_version = Gem.loaded_specs['cassback'].version
+  logger.info("Running cassback #{app_version}")
+  logger.info("Ruby version : #{RUBY_VERSION}-p#{RUBY_PATCHLEVEL}")
+rescue
+  logger.warn('Cannot determine cassback version - probably application is in development mode.')
+end
+
 #  Default action
 action = nil
 
