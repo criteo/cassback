@@ -1,5 +1,6 @@
 require 'fileutils'
 require 'table_print'
+require 'filesize'
 
 # Buffer size, used for downloads
 BUFFER_SIZE = 10_000_000
@@ -97,17 +98,24 @@ class BackupTool
     files = snapshot.metadata - last.metadata
     @logger.info("#{files.length} files to upload")
     index = 0
-    size = files.size
+    number_of_files = files.size
+    total_file_size = 0
     files.each do |file|
       index += 1
-      @logger.info("Sending file #{index}/#{size}  #{file} to Hadoop")
       local = @cassandra.data_path + '/' + file
+      local_file_size = File.size(local)
+      total_file_size += local_file_size
+      pretty_size = Filesize.from("#{local_file_size} B").pretty
+      @logger.info("Sending file #{index}/#{number_of_files} #{file} having size #{pretty_size} to Hadoop")
       remote = @hadoop.base_dir + '/' + snapshot.cluster + '/' + snapshot.node + '/' + file
       @logger.debug("#{local} => #{remote}")
       f = File.open(local, 'r')
       @hadoop.create(remote, f, overwrite: true)
       f.close
     end
+
+    total_file_size_pretty = Filesize.from("#{total_file_size} B").pretty
+    @logger.info("Total size of uploaded files is #{total_file_size_pretty}")
 
     @logger.info('Sending metadata to Hadoop')
     remote = @hadoop.base_dir + '/' + @metadir + '/' + snapshot.cluster + '/' + snapshot.node + '/cass_snap_' + snapshot.date

@@ -42,6 +42,10 @@ class Cassandra
   private :read_config_file
 
   def nodetool_snapshot(name)
+    # First delete the snapshot if it exists.
+    nodetool_clearsnapshot(name)
+
+    # Then trigger it.
     @logger.debug("Starting a new Cassandra snapshot #{name}")
     begin
       success = system('nodetool', 'snapshot', '-t', name)
