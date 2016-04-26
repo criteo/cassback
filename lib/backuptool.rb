@@ -96,8 +96,11 @@ class BackupTool
     @logger.info('Uploading tables to Hadoop')
     files = snapshot.metadata - last.metadata
     @logger.info("#{files.length} files to upload")
+    index = 0
+    size = files.size
     files.each do |file|
-      @logger.info("Sending file #{file} to Hadoop")
+      index += 1
+      @logger.info("Sending file #{index}/#{size}  #{file} to Hadoop")
       local = @cassandra.data_path + '/' + file
       remote = @hadoop.base_dir + '/' + snapshot.cluster + '/' + snapshot.node + '/' + file
       @logger.debug("#{local} => #{remote}")
