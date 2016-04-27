@@ -78,6 +78,9 @@ can retry the file download/upload of data. This is configurable via the followi
 If you want to check more about Hadoop's checksum algorithm that ensures data integrity you can check the
 following link : https://www.safaribooksonline.com/library/view/hadoop-the-definitive/9781449328917/ch04.html
 
+Also there is the **hadoop.readTimeout** property which has been set by default to 300s, but it can be configured to
+another value if necessary (if HDFS cluster is responding too slow sometimes).
+
 ## Cleanup policy
 
 Usually backups of databases take a lot of space. Even if we have optimized the code so the backups are done incrementally
