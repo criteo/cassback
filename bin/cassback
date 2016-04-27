@@ -57,6 +57,7 @@ options = {
     'directory'     => 'cassandra',
     'retryTimes'    => 5,
     'retryInterval' => 1,
+    'readTimeout'   => 300
   },
   'restore'   => {
     'destination' => 'cassandra',
@@ -162,7 +163,7 @@ begin
   # Create the Hadoop object
   hadoop = Hadoop.new(host: options['hadoop']['hostname'], port: options['hadoop']['port'],
   base_dir: options['hadoop']['directory'], retry_times: options['hadoop']['retryTimes'],
-  retry_interval: options['hadoop']['retryInterval'])
+  retry_interval: options['hadoop']['retryInterval'], read_timeout: options['hadoop']['readTimeout'])
 
   #  Create the Cassandra object
   cassandra = Cassandra.new(options['cassandra']['config'], logger)

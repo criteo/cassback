@@ -1,3 +1,4 @@
+#Configuration file that can be used as an example.
 cassandra:
 #  config: "/etc/cassandra/conf/cassandra.yaml"
   config: "/Users/b.niculescu/Tools/apache-cassandra-2.0.16/conf/cassandra.yaml"
@@ -10,6 +11,7 @@ hadoop:
   directory: "/tmp/b.niculescu/cassandra"
   retryTimes : 3
   retryInterval : 1
+  readTimeout: 300
 
 restore:
   destination: "cassback_restore"
