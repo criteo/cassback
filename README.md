@@ -2,6 +2,7 @@
 
 Welcome to your Cassback!
 This is a project that aims backup Cassandra SSTables and load them into HDFS for further usage.
+It intended to be used as a command line tool - for now it can be triggered only by commands.
 
 ## Installation
 
@@ -40,6 +41,31 @@ A simple command that you can use for starting a backup is :
 
     cassback -S -C path_to_some_config_file.yml
 
+## Structure of the backup
+
+A backup, that has been pushed from multiple Cassandra nodes to one HDFS location, has the following structure :
+
+**a) Backup files**
+
+    <hadoop_root_folder>/<cluster_name>/<node_name>/<keyspace>/<table>/<snapshot_path>/<backup_file>
+
+
+**b) Backup complete flags** (stored at cluster level in the metadata folder) :
+
+    <hadoop_root_folder>/<cass_snap_metadata>/<cluster_name>/BACKUP_COMPLETE_<date>
+
+
+**c) Metadata files** (stored at node level in metadata folder) :
+
+    <hadoop_root_folder>/cass_snap_metadata/<cluster_name>/<node_name>/cass_snap_<date>
+
+## Incremental or full backups ?
+
+**Backups are done incrementally, but published as full backups** - the tool checks locally which files will have to be uploaded to HDFS and checks
+if those files are already present in HDFS (because Cassandra files are immutable we don't have to risk to have two files
+with same name but different content). However when the metadata file is published it points to all the files that
+compose the backup so it basically publishes it as being a full backup.
+
 ## Configuration
 
 The application has some default configuration defined.
@@ -49,6 +75,8 @@ You can overwrite the default configuration using two meanings :
 
 2. Using individual configuration properties passed as parameters on the command line.
 The command line parameters have precedence over the configuration file.
+
+An example of configuration file is provided under conf/local.yml.
 
 ## Orchestration
 
@@ -94,13 +122,12 @@ The command for triggering a cleanup is :
     cassback -A -C conf/path_to_some_config_file.yml
 
 # Unit tests
+
 Unit tests can be executed locally by running the following command :
 
     rake test
 
 ## Contributing
 
-For now this is an internal Criteo project, but were aiming for making it open source and publishing to GitHub.
-
-Issue reports and merge requests are welcome on Criteo's GitLab at : https://gitlab.criteois.com/ruby-gems/cassback
+Bug reports and pull requests are welcome on GitHub at : https://github.com/criteo/cassback
 
