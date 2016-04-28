@@ -1,5 +1,6 @@
 #!/usr/bin/env ruby
-require 'logger'
+
+require 'syslog/logger'
 require 'optparse'
 require 'yaml'
 
@@ -15,13 +16,11 @@ class ::Hash
   end
 end
 
-# Create a Ruby logger with time/size rotation that logs both to file and console.
-two_mb = 2 * 1024 * 1024
-logger = Logger.new('cassback.log', 'weekly', two_mb)
+# Create a Ruby logger that logs both to syslog and console.
+logger = Syslog::Logger.new 'cassback'
 logger.formatter = proc do |severity, datetime, progname, msg|
-    entry = "[#{datetime}] #{severity} #{progname} : #{msg}\n"
-    print entry
-    entry
+    print "[#{datetime}] #{severity} #{progname} : #{msg}\n"
+    "#{msg}"
 end
 
 begin
