@@ -1,6 +1,0 @@
----
-
-- gather_facts: no
-  hosts: cstars02-par
-  roles:
-    - role: planb
