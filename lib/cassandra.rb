@@ -5,7 +5,7 @@ require 'yaml'
 class Cassandra
   attr_reader :data_path, :cluster_name, :node_name
 
-  def initialize(config_file, logger)
+  def initialize(config_file, disk_threshold, logger)
     @logger = logger
 
     read_config_file(config_file)
@@ -15,6 +15,8 @@ class Cassandra
     @logger.info("Cassandra cluster name = #{@cluster_name}")
     @logger.info("Cassandra node name = #{@node_name}")
     @logger.info("Cassandra data path = #{@data_path}")
+
+    @disk_threshold = disk_threshold
   end
 
   def read_config_file(config_file)
@@ -44,6 +46,13 @@ class Cassandra
   def nodetool_snapshot(name)
     # First delete the snapshot if it exists.
     nodetool_clearsnapshot(name)
+
+    # Check if we have enough disk space left
+    m = /\ ([0-9]+)%\ /.match(IO.popen("df #{@data_path}").readlines[1])
+    used = Integer(m[1])
+    if used > @disk_threshold
+      raise("Not enough disk space remaining for snapshot (#{used}% used > #{@disk_threshold}% required)")
+    end
 
     # Then trigger it.
     @logger.debug("Starting a new Cassandra snapshot #{name}")

@@ -49,6 +49,7 @@ command_line_config = {
 options = {
   'cassandra' => {
     'config' => '/etc/cassandra/conf/cassandra.yaml',
+    'disk_threshold' => 75
   },
   'hadoop'    => {
     'hostname'      => 'localhost',
@@ -165,7 +166,7 @@ begin
   retry_interval: options['hadoop']['retryInterval'], read_timeout: options['hadoop']['readTimeout'])
 
   #  Create the Cassandra object
-  cassandra = Cassandra.new(options['cassandra']['config'], logger)
+  cassandra = Cassandra.new(options['cassandra']['config'], options['cassandra']['disk_threshold'], logger)
 
   #  Create the backup object
   bck = BackupTool.new(cassandra, hadoop, logger)
