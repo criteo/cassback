@@ -47,6 +47,7 @@ command_line_config = {
 
 # Default options
 options = {
+  'guardfile' => '/tmp/cassback.guardfile',
   'cassandra' => {
     'config' => '/etc/cassandra/conf/cassandra.yaml',
     'disk_threshold' => 75
@@ -160,6 +161,11 @@ if action.nil?
 end
 
 begin
+  # If guard file exists, stop there
+  if File.exist?(options['guardfile'])
+    raise('Can not continue while guard file is present')
+  end
+
   # Create the Hadoop object
   hadoop = Hadoop.new(host: options['hadoop']['hostname'], port: options['hadoop']['port'],
   base_dir: options['hadoop']['directory'], retry_times: options['hadoop']['retryTimes'],
