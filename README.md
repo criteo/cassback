@@ -127,6 +127,17 @@ Unit tests can be executed locally by running the following command :
 
     rake test
 
+## Guard file
+
+Sometimes you maybe want to prevent backups running on a specific node during maintenance operations. This is possible by
+creating a guard file.
+
+    touch /tmp/cassback.guardfile
+
+While this file will exist, no operation will be possible
+
+Note that you can change the file location in configuration file
+
 ## Contributing
 
 Bug reports and pull requests are welcome on GitHub at : https://github.com/criteo/cassback
