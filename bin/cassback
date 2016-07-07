@@ -22,6 +22,7 @@ logger.formatter = proc do |severity, datetime, progname, msg|
     print "[#{datetime}] #{severity} #{progname} : #{msg}\n"
     "#{msg}"
 end
+logger.level = 2
 
 begin
   app_version = Gem.loaded_specs['cassback'].version
@@ -132,6 +133,12 @@ parser = OptionParser.new do |opts|
   opts.separator 'Cassandra:'
   opts.on('-E', '--cassandra CONFIGFILE', 'Cassandra configuration file (default is /etc/cassandra/conf/cassandra.yaml)') do |v|
     command_line_config['cassandra']['config'] = v
+  end
+
+  opts.separator ''
+  opts.separator 'Debug:'
+  opts.on('-v', '--verbose', 'Verbose log mode') do
+    logger.level = 0
   end
 
   opts.separator ''
