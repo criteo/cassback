@@ -19,8 +19,8 @@ end
 # Create a Ruby logger that logs both to syslog and console.
 logger = Syslog::Logger.new 'cassback'
 logger.formatter = proc do |severity, datetime, progname, msg|
-    print "[#{datetime}] #{severity} #{progname} : #{msg}\n"
-    "#{msg}"
+  print "[#{datetime}] #{severity} #{progname} : #{msg}\n"
+  msg.to_s
 end
 logger.level = 2
 
@@ -50,8 +50,8 @@ command_line_config = {
 options = {
   'guardfile' => '/tmp/cassback.guardfile',
   'cassandra' => {
-    'config' => '/etc/cassandra/conf/cassandra.yaml',
-    'disk_threshold' => 75
+    'config'         => '/etc/cassandra/conf/cassandra.yaml',
+    'disk_threshold' => 75,
   },
   'hadoop'    => {
     'hostname'      => 'localhost',
@@ -59,7 +59,7 @@ options = {
     'directory'     => 'cassandra',
     'retryTimes'    => 5,
     'retryInterval' => 1,
-    'readTimeout'   => 300
+    'readTimeout'   => 300,
   },
   'restore'   => {
     'destination' => 'cassandra',

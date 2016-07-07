@@ -22,8 +22,8 @@ class TestSimpleNumber < Test::Unit::TestCase
 
     # metadata file contains the sstables.
     metadata_content = File.open(remote_files[0], 'r').read
-    assert(metadata_content.include? 'SSTable-1-Data.db')
-    assert(metadata_content.include? 'SSTable-2-Data.db')
+    assert(metadata_content.include?('SSTable-1-Data.db'))
+    assert(metadata_content.include?('SSTable-2-Data.db'))
 
     # cleanup
     hadoop.delete('test/hadoop')
@@ -50,14 +50,14 @@ class TestSimpleNumber < Test::Unit::TestCase
 
     # metadata on first backup file contains the sstables.
     metadata_content = File.open(remote_files[0], 'r').read
-    assert(metadata_content.include? 'SSTable-1-Data.db')
-    assert(metadata_content.include? 'SSTable-2-Data.db')
+    assert(metadata_content.include?('SSTable-1-Data.db'))
+    assert(metadata_content.include?('SSTable-2-Data.db'))
 
     # metadata on second backup file contains the sstables.
     metadata_content = File.open(remote_files[1], 'r').read
-    assert(metadata_content.include? 'SSTable-2-Data.db')
-    assert(metadata_content.include? 'SSTable-3-Data.db')
-    assert(metadata_content.include? 'SSTable-4-Data.db')
+    assert(metadata_content.include?('SSTable-2-Data.db'))
+    assert(metadata_content.include?('SSTable-3-Data.db'))
+    assert(metadata_content.include?('SSTable-4-Data.db'))
 
     # cleanup
     hadoop.delete('test/hadoop')
