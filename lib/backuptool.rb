@@ -110,7 +110,14 @@ class BackupTool
       remote = @hadoop.base_dir + '/' + snapshot.cluster + '/' + snapshot.node + '/' + file
       @logger.debug("#{local} => #{remote}")
       f = File.open(local, 'r')
-      @hadoop.create(remote, f, overwrite: true)
+      begin
+        retries = 3
+        @hadoop.create(remote, f, overwrite: true)
+      rescue
+        @logger.info("Hadoop write failed - retrying in 1s")
+        sleep 1
+        retry if (retries -= 1) < 0
+      end
       f.close
     end
 
