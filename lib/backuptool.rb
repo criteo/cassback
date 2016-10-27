@@ -243,7 +243,7 @@ class BackupTool
   #   - +node+ -> node where the snapshot comes from
   #   - +date+ -> snapshot date
   #   - +destination+ -> local directory where to restore
-  def restore_snapshot(node, date, destination)
+  def restore_snapshot(node, date, destination, keyspace: 'ALL', table: 'ALL')
     # Search the snapshot matching node and date
     snapshots = search_snapshots(node: node, date: date)
 
@@ -254,10 +254,20 @@ class BackupTool
     else
       snapshot = snapshots[0]
       @logger.info("Restoring snapshot #{snapshot}")
-      @logger.info("#{snapshot.metadata.length} files to restore")
+      @logger.info("Snapshot has #{snapshot.metadata.length} files")
 
-      # For each file in metadata
-      snapshot.metadata.each do |file|
+      files_to_be_restored = snapshot.metadata.select { |item|
+        filename = File.basename(item)
+        matches_keyspace = keyspace == 'ALL' || (filename.include? keyspace)
+        matches_table =  table == 'ALL' || (filename.include? table)
+        matches_keyspace && matches_table
+      }
+
+      @logger.info("Found #{files_to_be_restored.length} to be restored that match
+              keyspace #{keyspace} and table #{table}")
+
+      # For each file in the list
+      files_to_be_restored.each do |file|
         @logger.info("Restoring file #{file}")
         local = destination + '/' + file
         remote = @hadoop.base_dir + '/' + snapshot.cluster + '/' + snapshot.node + '/' + file

@@ -63,6 +63,8 @@ options = {
   },
   'restore'   => {
     'destination' => 'cassandra',
+    'keyspace' => 'ALL',
+    'table' => 'ALL',
   },
 
   'cleanup'   => {
@@ -113,8 +115,14 @@ parser = OptionParser.new do |opts|
   opts.on('-d', '--date DATE', 'snapshot date, like YYYY_MM_DD') do |v|
     options['date'] = v
   end
-  opts.on('-t', '--destination DIR', 'local destination path for restore (default is cassandra)') do |v|
+  opts.on('-o', '--destination DIR', 'local destination/output path for restore (default is cassandra)') do |v|
     command_line_config['restore']['destination'] = v
+  end
+  opts.on('-k', '--keyspace KEYSPACE', 'keyspace that will be restored (by default all are restored)') do |v|
+    command_line_config['restore']['keyspace'] = v
+  end
+  opts.on('-t', '--table TABLE', 'table that will be restored (by default all are restored)') do |v|
+    command_line_config['restore']['table'] = v
   end
 
   opts.separator ''
@@ -194,7 +202,8 @@ begin
   # Restore a snapshot
   elsif action == 'restore'
     raise('No date given') unless options.include? 'date'
-    bck.restore_snapshot(options['node'], options['date'], options['restore']['destination'])
+    bck.restore_snapshot(options['node'], options['date'], options['restore']['destination'],
+                         keyspace: options['restore']['keyspace'], table: options['restore']['table'])
 
   # List snapshots
   elsif action == 'list'

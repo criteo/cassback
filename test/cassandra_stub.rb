@@ -12,14 +12,17 @@ class CassandraStub
     @data_path = 'test/cassandra' + '/' + cluster_name + '/' + node_name + '/'
     FileUtils.mkdir_p(@data_path)
 
-    # create some fake sstables
     @metadata = Set.new
+    end
+  end
+
+  public
+  def add_fake_files(file_indexes, keyspace, table)
     file_indexes.each do |index|
-      file_name = "SSTable-#{index}-Data.db"
+      file_name = "#{keyspace}-#{table}#{index}-Data.db"
       file_path = @data_path + '/' + file_name
       File.open(file_path, 'w') { |file| file.write('This is a test file that simulates an SSTable') }
       @metadata.add(file_name)
-    end
   end
 
   def new_snapshot

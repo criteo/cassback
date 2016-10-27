@@ -6,9 +6,12 @@ require_relative '../lib/backuptool'
 require_relative 'hadoop_stub'
 require_relative 'cassandra_stub'
 
-class TestSimpleNumber < Test::Unit::TestCase
+class TestBackupTool < Test::Unit::TestCase
   def test_new_snapshot
     hadoop = HadoopStub.new('test/hadoop')
+
+    clean_test_data(hadoop)
+
     create_new_snapshot(hadoop, 'node1', '2016_04_22', [1, 2])
 
     remote_files = hadoop.list_files('test/hadoop')
@@ -26,12 +29,14 @@ class TestSimpleNumber < Test::Unit::TestCase
     assert(metadata_content.include?('SSTable-2-Data.db'))
 
     # cleanup
-    hadoop.delete('test/hadoop')
-    hadoop.delete('test/cassandra')
+    clean_test_data(hadoop)
   end
 
   def test_two_snapshots
     hadoop = HadoopStub.new('test/hadoop')
+
+    clean_test_data(hadoop)
+
     create_new_snapshot(hadoop, 'node1', '2016_04_22', [1, 2])
     create_new_snapshot(hadoop, 'node1', '2016_04_23', [2, 3, 4])
 
@@ -60,12 +65,14 @@ class TestSimpleNumber < Test::Unit::TestCase
     assert(metadata_content.include?('SSTable-4-Data.db'))
 
     # cleanup
-    hadoop.delete('test/hadoop')
-    hadoop.delete('test/cassandra')
+    clean_test_data(hadoop)
   end
 
   def test_restore
     hadoop = HadoopStub.new('test/hadoop')
+
+    clean_test_data(hadoop)
+
     backup_tool = create_new_snapshot(hadoop, 'node1', '2016_04_22', [1, 2])
 
     # restore a newly created snapshot
@@ -78,13 +85,36 @@ class TestSimpleNumber < Test::Unit::TestCase
     assert_equal('test/restore/SSTable-2-Data.db', restored_files[1])
 
     # cleanup
-    hadoop.delete('test/hadoop')
-    hadoop.delete('test/restore')
-    hadoop.delete('test/cassandra')
+    clean_test_data(hadoop)
+  end
+
+  def test_restore_with_filtering
+    hadoop = HadoopStub.new('test/hadoop')
+    clean_test_data(hadoop)
+
+    keyspace = 'profile'
+    table = 'hash_status'
+
+    backup_tool = create_new_snapshot_2(hadoop, 'node1', '2016_04_22', [1, 2], keyspace, table)
+
+    # restore a newly created snapshot
+    backup_tool.restore_snapshot('node1', '2016_04_22', 'test/restore', keyspace: keyspace, table: table)
+
+    restored_files = hadoop.list_files('test/restore')
+    # two files were restored
+    assert_equal(2, restored_files.size)
+    assert_equal('test/restore/profile-hash_status1-Data.db', restored_files[0])
+    assert_equal('test/restore/profile-hash_status2-Data.db', restored_files[1])
+
+    # cleanup
+    clean_test_data(hadoop)
   end
 
   def test_delete
     hadoop = HadoopStub.new('test/hadoop')
+
+    clean_test_data(hadoop)
+
     backup_tool = create_new_snapshot(hadoop, 'node1', '2016_04_22', [1, 2])
 
     # delete a newly created snapshot
@@ -93,11 +123,14 @@ class TestSimpleNumber < Test::Unit::TestCase
     remote_files = hadoop.list_files('test/hadoop')
     assert_equal(0, remote_files.size)
 
-    hadoop.delete('test/cassandra')
+    clean_test_data(hadoop)
   end
 
   def test_backup_flag
     hadoop = HadoopStub.new('test/hadoop')
+
+    clean_test_data(hadoop)
+
     backup_tool = create_new_snapshot(hadoop, 'node1', '2016_04_22', [1, 2])
 
     backup_tool.create_backup_flag('2016_04_22')
@@ -108,12 +141,14 @@ class TestSimpleNumber < Test::Unit::TestCase
     assert_equal('test/hadoop/cass_snap_metadata/cluster1/BACKUP_COMPLETED_2016_04_22', remote_files[0])
 
     # cleanup
-    hadoop.delete('test/hadoop')
-    hadoop.delete('test/cassandra')
+    clean_test_data(hadoop)
   end
 
   def test_get_backup_flag
     hadoop = HadoopStub.new('test/hadoop')
+
+    clean_test_data(hadoop)
+
     backup_tool = create_new_snapshot(hadoop, 'node1', '2016_04_22', [1, 2])
 
     backup_tool.create_backup_flag('2016_04_22')
@@ -126,12 +161,14 @@ class TestSimpleNumber < Test::Unit::TestCase
     assert_equal('BACKUP_COMPLETED_2016_04_22', flags[0].file)
 
     # cleanup
-    hadoop.delete('test/hadoop')
-    hadoop.delete('test/cassandra')
+    clean_test_data(hadoop)
   end
 
   def test_cleanup
     hadoop = HadoopStub.new('test/hadoop')
+
+    clean_test_data(hadoop)
+
     retention_days = 30
 
     date_31_days_back = (Date.today - 31).strftime('%Y_%m_%d')
@@ -164,17 +201,43 @@ class TestSimpleNumber < Test::Unit::TestCase
     assert_equal("BACKUP_COMPLETED_#{date_30_days_back}", backup_flags[0].file)
 
     # cleanup
-    hadoop.delete('test/hadoop')
-    hadoop.delete('test/cassandra')
+    clean_test_data(hadoop)
   end
 
   def create_new_snapshot(hadoop, node, date, file_indexes)
     logger = Logger.new(STDOUT)
     cassandra = CassandraStub.new('cluster1', node, date, file_indexes)
-    backup_tool = BackupTool.new(cassandra, hadoop, logger)
 
+    # Add some fake files
+    cassandra.add_fake_files(file_indexes, 'SSTable', '')
+
+    backup_tool = BackupTool.new(cassandra, hadoop, logger)
     backup_tool.new_snapshot
 
     backup_tool
+  end
+
+  def create_new_snapshot_2(hadoop, node, date, file_indexes, keyspace, table)
+    logger = Logger.new(STDOUT)
+
+    cassandra = CassandraStub.new('cluster1', node, date, file_indexes)
+
+    # Add some files with keyspace and table
+    cassandra.add_fake_files(file_indexes, keyspace, table)
+    # Add some files not matching keyspace and table
+    cassandra.add_fake_files(file_indexes, 'test', 'test')
+
+
+    backup_tool = BackupTool.new(cassandra, hadoop, logger)
+    backup_tool.new_snapshot
+
+    backup_tool
+  end
+
+  def clean_test_data(hadoop)
+    # cleanup
+    hadoop.delete('test/hadoop')
+    hadoop.delete('test/restore')
+    hadoop.delete('test/cassandra')
   end
 end
