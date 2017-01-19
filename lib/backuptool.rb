@@ -87,6 +87,15 @@ class BackupTool
     @logger.info('Starting a new snapshot')
     snapshot = @cassandra.new_snapshot
 
+    begin
+      path = @hadoop.base_dir + '/' + snapshot.cluster + '/' + snapshot.node + '/'
+      if not @hadoop.mkdir(path)
+        raise("Could not create your cluster directory : #{path}")
+      end
+    rescue Exception => e
+        raise("Could not create your cluster directory : #{e.message}")
+    end
+
     existing = search_snapshots(node: snapshot.node)
     last = if existing.empty?
              CassandraSnapshot.new(snapshot.cluster, snapshot.node, 'never')
