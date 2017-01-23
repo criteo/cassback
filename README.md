@@ -1,5 +1,7 @@
 # Cassback
 
+<img src="https://travis-ci.org/criteo/cassback.svg?branch=master"/>
+
 Welcome to your Cassback!
 This is a project that aims backup Cassandra SSTables and load them into HDFS for further usage.
 It intended to be used as a command line tool - for now it can be triggered only by commands.
