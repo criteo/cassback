@@ -89,7 +89,7 @@ class Cassandra
   def get_keyspaces_and_tables
     result = {}
     Dir.foreach(@data_path) do |keyspace|
-      next if keyspace == '.' || keyspace == '..'
+      next if keyspace == '.' || keyspace == '..' || !Dir.exist?(@data_path + '/' + keyspace)
       result[keyspace] = []
       Dir.foreach(@data_path + '/' + keyspace) do |table|
         next if table == '.' || table == '..'

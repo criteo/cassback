@@ -22,59 +22,78 @@ class BackupTool
     @metadir = META_DIR
   end
 
+  def metadata_dir_for_backup(node, date)
+      return metadata_dir() + node + '/cass_snap_' + date + '/'
+  end
+
+  def metadata_dir_for_node(node)
+      return metadata_dir() + node + '/'
+  end
+
+  def metadata_dir()
+      return @hadoop.base_dir + '/' + @metadir + '/' + @cassandra.cluster_name + '/'
+  end
+
+  def data_dir_for_node(node)
+      return @hadoop.base_dir + '/' +  @cassandra.cluster_name + '/' + node + '/'
+  end
+
   # Look for snapshots
   # * *Args*    :
   #   - +node+ -> Cassandra node name
   #   - +date+ -> HDFS instance
   def search_snapshots(node: 'ALL', date: 'ALL')
-    result = []
 
-    def get_snapshot_metadata(node, date)
-      remote = @hadoop.base_dir + '/' + @metadir + '/' + @cassandra.cluster_name + '/' + node + '/cass_snap_' + date
-      return @hadoop.read(remote).split("\n").to_set
-    rescue Exception => e
-      raise("Could not read metadata : #{e.message}")
-    end
-
+    # Look for all snapshots already existing for "node" at time "date"
     def get_snapshots_node(node, date)
-      result = []
+      results = []
+      dates = [date]
       begin
         if date == 'ALL'
-          ls = @hadoop.list("#{@hadoop.base_dir}/#{@metadir}/#{@cassandra.cluster_name}/#{node}")
-          ls_metadata = ls.select { |item| item['pathSuffix'].include? 'cass_snap_' }
-          ls_metadata.each do |item|
-            date = item['pathSuffix'].gsub('cass_snap_', '')
-            metadata = get_snapshot_metadata(node, date)
-            snapshot = CassandraSnapshot.new(@cassandra.cluster_name, node, date, metadata)
-            result.push(snapshot)
-          end
-        else
-          metadata = get_snapshot_metadata(node, date)
-          snapshot = CassandraSnapshot.new(@cassandra.cluster_name, node, date, metadata)
-          result.push(snapshot)
+          dates = @hadoop.list(metadata_dir_for_node(node))
+                         .select { |dir| dir['pathSuffix'].include? 'cass_snap_' }
+                         .map { |dir| dir['pathSuffix'].gsub('cass_snap_', '')}
         end
+
+        dates.each do |date|
+          metadata = @hadoop.read(metadata_dir_for_backup(node, date)).split("\n").to_set
+          results.push(CassandraSnapshot.new(@cassandra.cluster_name, node, date, metadata))
+        end
+
       rescue Exception => e
         @logger.warn("Could not get snapshots for node #{node} : #{e.message}")
       end
-      result
+
+      return results
     end
 
-    if node == 'ALL'
-      begin
-        ls = @hadoop.list("#{@hadoop.base_dir}/#{@metadir}/#{@cassandra.cluster_name}")
-        ls_nodes = ls.select { |item| item['type'].casecmp('DIRECTORY') == 0 }
-        ls_nodes.each do |item|
-          n = item['pathSuffix']
-          result += get_snapshots_node(n, date)
-        end
-      rescue Exception => e
-        @logger.warn("Could not get snapshots for cluster #{@cassandra.cluster_name} : #{e.message}")
+    # Get the list of nodes
+    def get_node_list(node)
+      if node != 'ALL'
+        return [node]
       end
-    else
-      result = get_snapshots_node(node, date)
+
+      nodes = []
+      begin
+        nodes = @hadoop.list(metadata_dir())
+                       .select { |item| item['type'].casecmp('DIRECTORY') == 0 }
+                       .map { |item| item['pathSuffix'] }
+                       .flatten
+      rescue Exception => e
+        @logger.warn("Could not get node list for cluster #{@cassandra.cluster_name} : #{e.message}")
+      end
+
+      return nodes
     end
 
-    result.sort
+
+    # RUN
+    @logger.info("Searching snapshots for #{node} at time #{date}")
+    snapshots = get_node_list(node).map { |node| get_snapshots_node(node, date) }
+                                   .flatten
+                                   .sort
+    @logger.info("Found #{snapshots.length} snapshots")
+    return snapshots
   end
 
   def list_snapshots(node: @cassandra.node_name)
@@ -83,31 +102,40 @@ class BackupTool
     tp(snapshots, 'cluster', 'node', 'date')
   end
 
-  def new_snapshot
-    @logger.info('Starting a new snapshot')
-    snapshot = @cassandra.new_snapshot
-
+  def prepare_hdfs_dirs(node)
+    @logger.info(':::::::: Prepare HDFS ::::::::')
     begin
-      path = @hadoop.base_dir + '/' + snapshot.cluster + '/' + snapshot.node + '/'
-      if not @hadoop.mkdir(path)
-        raise("Could not create your cluster directory : #{path}")
+      paths = [data_dir_for_node(node), metadata_dir_for_node(node)]
+      paths.each do |path|
+        @logger.info("Creating destination directory " + path)
+        if not @hadoop.mkdir(path)
+          raise
+        end
       end
     rescue Exception => e
         raise("Could not create your cluster directory : #{e.message}")
     end
+  end
 
+  def new_snapshot
+    @logger.info(':::::::: Creating new snapshot ::::::::')
+    snapshot = @cassandra.new_snapshot
+
+    prepare_hdfs_dirs(snapshot.node)
+
+    @logger.info(':::::::: Get last backup ::::::::')
     existing = search_snapshots(node: snapshot.node)
     last = if existing.empty?
-             CassandraSnapshot.new(snapshot.cluster, snapshot.node, 'never')
-           else
-             existing[-1]
-    end
-
-    @logger.info('Uploading tables to Hadoop')
+           then CassandraSnapshot.new(snapshot.cluster, snapshot.node, 'never')
+           else existing[-1] end
+    @logger.info("Last snapshot is #{last}")
     files = snapshot.metadata - last.metadata
     @logger.info("#{files.length} files to upload")
+
+
+    @logger.info('::::::: Uploading tables to HDFS ::::::')
     index = 0
-    number_of_files = files.size
+    number_of_files = files.length
     total_file_size = 0
     files.each do |file|
       index += 1
@@ -115,26 +143,27 @@ class BackupTool
       local_file_size = File.size(local)
       total_file_size += local_file_size
       pretty_size = Filesize.from("#{local_file_size} B").pretty
-      @logger.info("Sending file #{index}/#{number_of_files} #{file} having size #{pretty_size} to Hadoop")
-      remote = @hadoop.base_dir + '/' + snapshot.cluster + '/' + snapshot.node + '/' + file
+      @logger.info("Sending file #{index}/#{number_of_files} #{file} having size #{pretty_size} to HDFS")
+      remote = data_dir_for_node(snapshot.node) + file
       @logger.debug("#{local} => #{remote}")
-      f = File.open(local, 'r')
-      begin
-        retries = 3
-        @hadoop.create(remote, f, overwrite: true)
-      rescue
-        @logger.info("Hadoop write failed - retrying in 1s")
-        sleep 1
-        retry if (retries -= 1) < 0
+      File.open(local, 'r') do |f|
+        begin
+          retries = 3
+          @hadoop.create(remote, f, overwrite: true)
+        rescue Exception => e
+          @logger.info("HDFS write failed: #{e.message}")
+          @logger.info("HDFS write retrying in 1s")
+          sleep 1
+          retry if (retries -= 1) < 0
+        end
       end
-      f.close
     end
 
     total_file_size_pretty = Filesize.from("#{total_file_size} B").pretty
     @logger.info("Total size of uploaded files is #{total_file_size_pretty}")
 
-    @logger.info('Sending metadata to Hadoop')
-    remote = @hadoop.base_dir + '/' + @metadir + '/' + snapshot.cluster + '/' + snapshot.node + '/cass_snap_' + snapshot.date
+    @logger.info('Sending metadata to HDFS')
+    remote = metadata_dir_for_backup(snapshot.node, snapshot.date)
     @logger.debug("metadata => #{remote}")
     @hadoop.create(remote, snapshot.metadata.to_a * "\n", overwrite: true)
 
@@ -146,27 +175,27 @@ class BackupTool
     snapshots = search_snapshots(node: node, date: date)
     if snapshots.empty?
       raise('No snapshot found for deletion')
-    else
-      snapshots.each do |snapshot|
-        @logger.info("Deleting snapshot #{snapshot}")
-        node_snapshots = search_snapshots(node: snapshot.node)
-        merged_metadata = Set.new
-        node_snapshots.each do |s|
-          merged_metadata += s.metadata if s != snapshot
-        end
-        files = snapshot.metadata - merged_metadata
-        @logger.info("#{files.length} files to delete")
-        files.each do |file|
-          @logger.info("Deleting file #{file}")
-          remote = @hadoop.base_dir + '/' + snapshot.cluster + '/' + snapshot.node + '/' + file
-          @logger.debug("DELETE => #{remote}")
-          @hadoop.delete(remote)
-        end
-        @logger.info('Deleting metadata in Hadoop')
-        remote = @hadoop.base_dir + '/' + @metadir + '/' + snapshot.cluster + '/' + snapshot.node + '/cass_snap_' + snapshot.date
+    end
+
+    snapshots.each do |snapshot|
+      @logger.info("Deleting snapshot #{snapshot}")
+      node_snapshots = search_snapshots(node: snapshot.node)
+      merged_metadata = Set.new
+      node_snapshots.each do |s|
+        merged_metadata += s.metadata if s != snapshot
+      end
+      files = snapshot.metadata - merged_metadata
+      @logger.info("#{files.length} files to delete")
+      files.each do |file|
+        @logger.info("Deleting file #{file}")
+        remote = data_dir_for_node(snapshot.node) + '/' + file
         @logger.debug("DELETE => #{remote}")
         @hadoop.delete(remote)
       end
+      @logger.info('Deleting metadata in HDFS')
+      remote = metadata_dir_for_backup(snapshot.node, snapshot.date)
+      @logger.debug("DELETE => #{remote}")
+      @hadoop.delete(remote)
     end
   end
 
@@ -177,7 +206,7 @@ class BackupTool
     @logger.info("Cleaning backup data on all nodes before #{retention_date}.")
 
     all_snapshots = search_snapshots
-    @logger.info("A total of #{all_snapshots.size} snapshots were found on Hadoop server.")
+    @logger.info("A total of #{all_snapshots.size} snapshots were found on HDFS.")
 
     snapshots_to_be_deleted = all_snapshots.select { |snapshot| snapshot.get_date < retention_date }
     @logger.info("A total of #{snapshots_to_be_deleted.size} snapshots will be deleted.")
@@ -187,14 +216,13 @@ class BackupTool
     end
 
     all_backup_flags = get_backup_flags
-    @logger.info("A total of #{all_backup_flags.size} back up flags were found on Hadoop server.")
+    @logger.info("A total of #{all_backup_flags.size} back up flags were found on HDFS.")
 
     backup_flags_to_be_delete = all_backup_flags.select { |flag| flag.date < retention_date }
     @logger.info("A total of #{backup_flags_to_be_delete.size} backup flags will be deleted.")
 
-    backup_flags_location = @hadoop.base_dir + '/' + @metadir + '/' + @cassandra.cluster_name
     backup_flags_to_be_delete.each do |flag|
-      file = backup_flags_location + '/' + flag.file
+      file = metadata_dir() + flag.file
       @logger.info("Deleting #{file}")
       @hadoop.delete(file)
     end
@@ -204,19 +232,16 @@ class BackupTool
   # This is an individual command that has to be called manually after snapshots have finished
   def create_backup_flag(date)
     file_name = 'BACKUP_COMPLETED_' + date
-    remote_file = @hadoop.base_dir + '/' + @metadir + '/' + @cassandra.cluster_name + '/' + file_name
+    remote_file = metadata_dir() + file_name
 
     @logger.info('Setting backup completed flag : ' + remote_file)
     @hadoop.create(remote_file, '', overwrite: true)
   end
 
   def get_backup_flags
-    backup_flags_location = @hadoop.base_dir + '/' + @metadir + '/' + @cassandra.cluster_name
-    ls = @hadoop.list(backup_flags_location)
-    backup_flags = ls.select { |item| item['pathSuffix'].include? 'BACKUP_COMPLETED_' }
-    backup_flags.collect do |file|
-      BackupFlag.new(@cassandra.cluster_name, file['pathSuffix'])
-    end
+    @hadoop.list(metadata_dir())
+           .select { |item| item['pathSuffix'].include? 'BACKUP_COMPLETED_' }
+           .collect { |file| BackupFlag.new(@cassandra.cluster_name, file['pathSuffix']) }
   end
 
   # Download a file from HDFS, buffered way
@@ -279,7 +304,7 @@ class BackupTool
       files_to_be_restored.each do |file|
         @logger.info("Restoring file #{file}")
         local = destination + '/' + file
-        remote = @hadoop.base_dir + '/' + snapshot.cluster + '/' + snapshot.node + '/' + file
+        remote = data_dir_for_node(snapshot.node) + file
         # Download the file from hdfs
         buffered_download(remote, local)
       end
