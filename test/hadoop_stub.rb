@@ -26,9 +26,14 @@ class HadoopStub
     end
   end
 
+  def mkdir(path, _options = {})
+    FileUtils.mkdir_p path
+    return true
+  end
+
   def list_files(path, _options = {})
     files_and_folders = Dir.glob("#{path}/**/*")
-    files_and_folders.select { |file| File.file?(file) }
+    files_and_folders.select { |file| File.file?(file) }.sort
   end
 
   def create(path, body, _options = {})

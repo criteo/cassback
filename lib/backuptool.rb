@@ -23,7 +23,7 @@ class BackupTool
   end
 
   def metadata_dir_for_backup(node, date)
-      return metadata_dir() + node + '/cass_snap_' + date + '/'
+      return metadata_dir() + node + '/cass_snap_' + date
   end
 
   def metadata_dir_for_node(node)
