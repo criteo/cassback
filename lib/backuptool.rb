@@ -222,9 +222,13 @@ class BackupTool
     @logger.info("A total of #{backup_flags_to_be_delete.size} backup flags will be deleted.")
 
     backup_flags_to_be_delete.each do |flag|
-      file = metadata_dir() + flag.file
-      @logger.info("Deleting #{file}")
-      @hadoop.delete(file)
+      begin
+        file = metadata_dir() + flag.file
+        @logger.info("Deleting #{file}")
+        @hadoop.delete(file)
+      rescue Exception => e
+        @logger.warn("Cannot delete #{file} reason: #{e.message}")
+      end
     end
   end
 
