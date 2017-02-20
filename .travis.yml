@@ -1,4 +1,9 @@
 language: ruby
 rvm:
-  - 2.2.2
-
+- 2.2.2
+deploy:
+  provider: rubygems
+  api_key:
+    secure: AEwwWLx3cvIIvg8hRLmFSuw4kvg5uRteef9no5ug6hCyZML3Gg8OI6APoGpjEf6hRdXMrundp9APzy2d6Hv6i39ts4CTLU1OU+jm8LX7NfykiPJek88F5KwwvvEH7u42DhZKnh3jK+JXolhodYhJt1Cn++3pE5jIgN7EFJZot3Rx/UgbWJkAxqN8+zgyUrttiKWlkx78R/o2n03VuZXmcjINu5UZEiYM1I0bfI3+EWzk5oAkjST8HR7SGKvs1OPfkOFnpgJ/1SiXiVhgJ70Nlo+sdKNDkaixcJmiQXkCyBKJYyZLBzjurGpKUG5ff3GpM54qnwzGYaSWiMuBO3m4yyG3LFHU8Vq/JW6SzAqrIDFcxn9aZoyzPyUXn9MBI/UCJutPedwomdFooU9e3n2XaofUwlRSnjEfYpyjhCjKsO+cz5ANkHaRNzRB52jhW40dOsm18qoXe0ppGaYJvf9s43lXxRkuqFmxBDUxT2AQyo5NtU/50PlTISc0mo6lmWsUGqFuoqHTd3rOfZai1FXDDauwuRntITnMiqjE1Tywb5S8E+N6Xd4DZMfl21zKDN1QUifzvEqHfEgwyjozwIURtZr5weTTfQr3JFxdyrh7HGSOT9cn/YRpFRIJ71ZEVlHuyJ1Bmdg66lViJYa1R2PJzqjSn6Havey6WUsqxTMT7hg=
+  on:
+    tags: true
