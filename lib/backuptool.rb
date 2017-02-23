@@ -174,7 +174,8 @@ class BackupTool
   def delete_snapshots(node: @cassandra.node_name, date: 'ALL')
     snapshots = search_snapshots(node: node, date: date)
     if snapshots.empty?
-      raise('No snapshot found for deletion')
+      @logger.warn('No snapshot found for deletion')
+      return
     end
 
     snapshots.each do |snapshot|
